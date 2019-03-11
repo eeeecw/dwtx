@@ -1,0 +1,16 @@
+{
+	"description": "A WePY project",
+	"setting": {
+		"urlCheck": true,
+		"es6": false,
+		"postcss": false,
+		"minified": false,
+		"newFeature": true
+	},
+	"compileType": "miniprogram",
+	"appid": "wx08a38d7462cdd603",
+	"projectname": "dwtx2",
+	"miniprogramRoot": "dist/",
+	"libVersion": "2.6.2",
+	"condition": {}
+}

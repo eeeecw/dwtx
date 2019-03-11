@@ -1,0 +1,126 @@
+<style lang="less">
+  .i-tab-bar{
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+  }
+  .img{
+    width: 225rpx;
+    height: 225rpx;
+    margin-left: 20rpx;
+  }
+  .container{
+
+  }
+</style>
+<template>
+  <view class="container">
+    <view>
+      <repeat for="{{ img }}" key="key" index="index" item="item">
+        <image class="img" src="{{ item.url }}"></image>
+      </repeat>
+    </view>
+    <view>
+      <i-page current="{{ currentPage }}" total="{{ system.xiaohai }}" bind:change="handleChangePage">
+        <view slot="prev">Prev</view>
+        <view slot="next">Next</view>
+      </i-page>
+    </view>
+    <i-tab-bar class="i-tab-bar" current="{{ currentTab }}" bindchange="handleChangeTabBar">
+      <i-tab-bar-item key="xiaohai" icon="like" current-icon="like_fill" title="小孩"></i-tab-bar-item>
+      <i-tab-bar-item key="nanren" icon="like" current-icon="like_fill" title="男人"></i-tab-bar-item>
+      <i-tab-bar-item key="nvren" icon="like" current-icon="like_fill" title="女人"></i-tab-bar-item>
+      <i-tab-bar-item key="dongwu" icon="like" current-icon="like_fill" title="动物"></i-tab-bar-item>
+    </i-tab-bar>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class Index extends wepy.page {
+    constructor () {
+      super()
+      wx.cloud.init()
+      this.db = wx.cloud.database()
+    }
+    config = {
+      navigationBarTitleText: 'test',
+      usingComponents: {
+        'i-tab-bar': '../iview/tab-bar/index',
+        'i-tab-bar-item': '../iview/tab-bar-item/index',
+        'i-page': '../../iview/page/index'
+      }
+    }
+    components = {
+    }
+
+    mixins = []
+
+    data = {
+      currentTab: 'xiaohai',
+      currentPage: 1,
+      system: [],
+      img: []
+    }
+
+    computed = {
+      now () {
+        return +new Date()
+      }
+    }
+
+    methods = {
+      handleChangeTabBar ({detail}) { // 切换 tabBar
+        this.currentPage = detail.key
+      },
+      handleChangePage ({ detail }) {
+        if (detail.type === 'prev') {
+          this.currentPage--
+          this.getImgList('lt', this.img[0])
+        } else {
+          this.currentPage++
+          this.getImgList('gt', this.img[17])
+        }
+      }
+    }
+
+    getImgList (mand, id) { // 获取图片列表
+      console.log(this)
+      const _ = this.db.command
+      this.db.collection('todos').where({
+        _id: _[mand](id)
+      }).get({
+        success (res) {
+          console.log(res)
+          this.img = res.data
+          this.$apply()
+        }
+      })
+    }
+
+    events = {
+      'index-emit': (...args) => {
+        let $event = args[args.length - 1]
+        console.log(`${this.$name} receive ${$event.name} from ${$event.source.$name}`)
+      }
+    }
+
+    onLoad () {
+      let _this = this
+      this.db.collection('system').where('').get({
+        success (res) {
+          _this.system = res.data[0]
+          _this.$apply()
+        }
+      })
+      this.db.collection('xiaohai').where('').limit(18).get({
+        success (res) {
+          console.log(res)
+          _this.img = res.data
+          _this.$apply()
+        }
+      })
+    }
+  }
+</script>
