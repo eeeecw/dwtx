@@ -9,15 +9,30 @@
     height: 225rpx;
     margin-left: 20rpx;
   }
-  .container{
-
+  .mongolia{
+    position: fixed;
+    top: 0;right: 0;bottom: 0;left: 0;
+    background-color: rgba(0, 0, 0, 0.5)
+  }
+  .mongolia .img{
+    margin: 100rpx auto 0 auto; 
+    width: 600rpx;
+    height: 600rpx;
+    display: block;
+  }
+  .mongolia .return{
+    color: #fff;
+    margin: 10rpx 0 0 20rpx;
+  }
+  .no-scroll{
+    height: 100%;
   }
 </style>
 <template>
   <view class="container">
-    <view>
+    <view class="{{ detail.show ? 'no-scroll' : '' }}">
       <repeat for="{{ img }}" key="key" index="index" item="item">
-        <image class="img" src="{{ item.url }}"></image>
+        <image @tap="showDetail({{ item.url }})" class="img" src="{{ item.url }}"></image>
       </repeat>
     </view>
     <view>
@@ -32,6 +47,18 @@
       <i-tab-bar-item key="nvren" icon="like" current-icon="like_fill" title="女人"></i-tab-bar-item>
       <i-tab-bar-item key="dongwu" icon="like" current-icon="like_fill" title="动物"></i-tab-bar-item>
     </i-tab-bar>
+    <view class="mongolia" wx:if="{{ detail.show }}" catchtouchmove="true">
+      <span @tap="returnList" class="return"><i-icon type="return" />返回</span>
+      <image class="img" src="{{ detail.url }}"></image>
+      <i-row>
+        <i-col offset="2" span="10" i-class="col-class">
+          <i-button @tap="downImg" type="success" size="small">下载</i-button>
+        </i-col>
+        <i-col span="10" i-class="col-class">
+          <i-button type="primary" size="small">分享</i-button>
+        </i-col>
+      </i-row>
+    </view>
   </view>
 </template>
 
@@ -49,7 +76,11 @@
       usingComponents: {
         'i-tab-bar': '../iview/tab-bar/index',
         'i-tab-bar-item': '../iview/tab-bar-item/index',
-        'i-page': '../../iview/page/index'
+        'i-page': '../../iview/page/index',
+        'i-icon': '../../iview/icon/index',
+        'i-button': '../../iview/button/index',
+        'i-row': '../../iview/row/index',
+        'i-col': '../../iview/col/index'
       }
     }
     components = {
@@ -61,7 +92,11 @@
       currentTab: 'xiaohai',
       currentPage: 1,
       system: [],
-      img: []
+      img: [],
+      detail: {
+        show: false,
+        url: ''
+      }
     }
 
     computed = {
@@ -72,38 +107,100 @@
 
     methods = {
       handleChangeTabBar ({detail}) { // 切换 tabBar
-        this.currentPage = detail.key
+        this.currentTab = detail.key
       },
       handleChangePage ({ detail }) {
         if (detail.type === 'prev') {
           this.currentPage--
-          this.getImgList('lt', this.img[0])
         } else {
           this.currentPage++
-          this.getImgList('gt', this.img[17])
         }
+        this.getImgList((this.currentPage - 1) * 18)
+      },
+      showDetail (url) {
+        this.detail.url = url
+        this.detail.show = true
+      },
+      stopPageScroll () {
+        console.log('scroll')
+        return true
+      },
+      returnList () {
+        this.detail.show = false
+      },
+      downImg () {
+        this.writePhotosAlbum()
+        wx.downloadFile({
+          url: 'https://636f-cool-head-1258713801.tcb.qcloud.la/9.jpg?sign=a1ff7b210765d27ec3b6d7a614ec1c9d&t=1552323927',
+          success: function (res) {
+            console.log(res)
+            wx.saveImageToPhotosAlbum({
+              filePath: res.tempFilePath,
+              success: function (data) {
+                wx.showToast({
+                  title: '保存成功',
+                  icon: 'success',
+                  duration: 2000
+                })
+              },
+              fail: function (err) {
+                console.log(err)
+                if (err.errMsg === 'saveImageToPhotosAlbum:fail auth deny') {
+                  console.log('当初用户拒绝，再次发起授权')
+                  wx.openSetting({
+                    success(settingdata) {
+                      console.log(settingdata)
+                      if (settingdata.authSetting['scope.writePhotosAlbum']) {
+                        console.log('获取权限成功，给出再次点击图片保存到相册的提示。')
+                      } else {
+                        console.log('获取权限失败，给出不给权限就无法正常使用的提示')
+                      }
+                    }
+                  })
+                }
+              },
+              complete(res) {
+                console.log(res)
+              }
+            })
+          }
+        })
       }
     }
 
-    getImgList (mand, id) { // 获取图片列表
-      console.log(this)
+    writePhotosAlbum () {
+      wx.getSetting({
+        success(res) {
+          if (!res.authSetting['scope.writePhotosAlbum']) {
+            wx.authorize({
+              scope: 'scope.writePhotosAlbum',
+              success() {
+                console.log('授权成功')
+              }
+            })
+          }
+        }
+      })
+    }
+
+    getImgList (id) { // 获取图片列表
+      const _this = this
       const _ = this.db.command
-      this.db.collection('todos').where({
-        _id: _[mand](id)
-      }).get({
+      this.db.collection('xiaohai').where({
+        id: _.gt(id)
+      }).limit(18).get({
         success (res) {
           console.log(res)
-          this.img = res.data
-          this.$apply()
+          _this.img = res.data
+          _this.$apply()
+          wx.pageScrollTo({
+            scrollTop: 0
+          })
         }
       })
     }
 
     events = {
-      'index-emit': (...args) => {
-        let $event = args[args.length - 1]
-        console.log(`${this.$name} receive ${$event.name} from ${$event.source.$name}`)
-      }
     }
 
     onLoad () {
