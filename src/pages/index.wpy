@@ -43,19 +43,19 @@
     </view>
     <i-tab-bar class="i-tab-bar" current="{{ currentTab }}" bindchange="handleChangeTabBar">
       <i-tab-bar-item key="xiaohai" icon="like" current-icon="like_fill" title="小孩"></i-tab-bar-item>
-      <i-tab-bar-item key="nanren" icon="like" current-icon="like_fill" title="男人"></i-tab-bar-item>
-      <i-tab-bar-item key="nvren" icon="like" current-icon="like_fill" title="女人"></i-tab-bar-item>
+      <i-tab-bar-item key="nansheng" icon="like" current-icon="like_fill" title="男人"></i-tab-bar-item>
+      <i-tab-bar-item key="nvsheng" icon="like" current-icon="like_fill" title="女人"></i-tab-bar-item>
       <i-tab-bar-item key="dongwu" icon="like" current-icon="like_fill" title="动物"></i-tab-bar-item>
     </i-tab-bar>
-    <view class="mongolia" wx:if="{{ detail.show }}" catchtouchmove="true">
-      <span @tap="returnList" class="return"><i-icon type="return" />返回</span>
-      <image class="img" src="{{ detail.url }}"></image>
+    <view @tap="returnList" class="mongolia" wx:if="{{ detail.show }}" catchtouchmove="true">
+      <!-- <span @tap="returnList" class="return"><i-icon type="return" />返回</span> -->
+      <image @tap.capture.stop="handleStopTap" class="img" src="{{ detail.url }}"></image>
       <i-row>
         <i-col offset="2" span="10" i-class="col-class">
-          <i-button @tap="downImg" type="success" size="small">下载</i-button>
+          <i-button @tap.stop="downImg" type="success" size="small">下载</i-button>
         </i-col>
         <i-col span="10" i-class="col-class">
-          <i-button type="primary" size="small">分享</i-button>
+          <i-button @tap.stop="handleStopTap" type="primary" size="small">分享</i-button>
         </i-col>
       </i-row>
     </view>
@@ -89,6 +89,7 @@
     mixins = []
 
     data = {
+      host: 'https://636f-cool-head-1258713801.tcb.qcloud.la/',
       currentTab: 'xiaohai',
       currentPage: 1,
       system: [],
@@ -108,6 +109,8 @@
     methods = {
       handleChangeTabBar ({detail}) { // 切换 tabBar
         this.currentTab = detail.key
+        this.currentPage = 1
+        this.getImgList(1)
       },
       handleChangePage ({ detail }) {
         if (detail.type === 'prev') {
@@ -115,7 +118,7 @@
         } else {
           this.currentPage++
         }
-        this.getImgList((this.currentPage - 1) * 18)
+        this.getImgList((this.currentPage - 1) * 30 + 1)
       },
       showDetail (url) {
         this.detail.url = url
@@ -165,7 +168,8 @@
             })
           }
         })
-      }
+      },
+      handleStopTap () {} // 组织点击冒泡
     }
 
     writePhotosAlbum () {
@@ -184,19 +188,15 @@
     }
 
     getImgList (id) { // 获取图片列表
-      const _this = this
-      const _ = this.db.command
-      this.db.collection('xiaohai').where({
-        id: _.gt(id)
-      }).limit(18).get({
-        success (res) {
-          console.log(res)
-          _this.img = res.data
-          _this.$apply()
-          wx.pageScrollTo({
-            scrollTop: 0
-          })
-        }
+      this.img = []
+      for (let i = 1; i < 31; i++) {
+        this.img.push({
+          url: this.host + this.currentTab + '/' + id + '.jpg'
+        })
+        id++
+      }
+      wx.pageScrollTo({
+        scrollTop: 0
       })
     }
 
@@ -211,13 +211,7 @@
           _this.$apply()
         }
       })
-      this.db.collection('xiaohai').where('').limit(18).get({
-        success (res) {
-          console.log(res)
-          _this.img = res.data
-          _this.$apply()
-        }
-      })
+      this.getImgList(1)
     }
   }
 </script>
